@@ -153,7 +153,7 @@ class BasicSampler():
             vPrediction = False,
             device = None
     ):
-        with tf.device(device):
+        with keras.device(device):
             # Progress Bar set-up
             progbar = keras.utils.Progbar(len(self.timesteps))
             iteration = 0

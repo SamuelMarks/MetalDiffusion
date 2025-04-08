@@ -99,7 +99,7 @@ class StableDiffusion:
     ):
         self.device = device
 
-        with tf.device(self.device):
+        with keras.device(self.device):
             ### Step 1: Establish image dimensions for UNet ###
             ## requires multiples of 2**7, 2 to the power of 7
             self.imageHeight = round(imageHeight / 128) * 128
@@ -229,7 +229,7 @@ class StableDiffusion:
         else:
             keras_print("\nCompiling models")
 
-        with tf.device(self.device):
+        with keras.device(self.device):
             for module in modules:
                 getattr(self, module).compile(
                     optimizer = keras.optimizers.Adam(),
@@ -258,7 +258,7 @@ class StableDiffusion:
         controlNetCache = False,
         vPrediction = False
     ):
-        with tf.device(self.device):
+        with keras.device(self.device):
             ## Memory Efficiency
             # Clear up tensorflow memory
             keras_print("\n...cleaning memory...")
@@ -492,7 +492,7 @@ class StableDiffusion:
             legacy
     ):
         TextLimit = MAX_TEXT_LEN - 1
-        with tf.device(self.device):
+        with keras.device(self.device):
             if legacy is True:
                 # First, encode the prompt
                 inputs = self.tokenizer.encode(prompt)
@@ -621,7 +621,7 @@ def CreateModels(
     useControlNet = [False],
     device = None
 ):
-    with tf.device(device):
+    with keras.device(device):
         # Memory Clean up
         keras.backend.clear_session()
         gc.collect()

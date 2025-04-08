@@ -349,7 +349,7 @@ class GroupNormalization(keras.layers.Layer):
             initializer = "zeros",
         )
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         input_shape = keras.ops.shape(inputs)
         reshaped_inputs = self._reshape_into_groups(inputs, input_shape)
@@ -413,7 +413,7 @@ class HintBlocks(keras.layers.Layer):
             PaddedConv2D(filters = model_channels, kernel_size = 3, padding = 1)
         ]
     
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         x = inputs
         layerNumber = 0
@@ -444,7 +444,7 @@ class PaddedConv2D(keras.layers.Layer):
         self.padding = padding
         self.strides = strides
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         x = self.padding2d(inputs)
         return self.conv2d(x)
@@ -488,7 +488,7 @@ class ResBlock(keras.layers.Layer):
         else:
             self.residual_projection = lambda x: x
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         inputs, embeddings = inputs
         x = inputs
@@ -542,7 +542,7 @@ class SpatialTransformer(keras.layers.Layer):
         })
         return config
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         inputs, context = inputs
         _, h, w, c = inputs.shape
@@ -573,7 +573,7 @@ class BasicTransformerBlock(keras.layers.Layer):
         self.geglu = GEGLU(dim * 4)
         self.dense = keras.layers.Dense(dim)
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         inputs, context = inputs
         x = self.attn1([self.norm1(inputs), None]) + inputs
@@ -592,7 +592,7 @@ class CrossAttention(keras.layers.Layer):
         self.head_size = head_size
         self.out_proj = keras.layers.Dense(num_heads * head_size, name = "out_projection")
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         inputs, context = inputs
         context = inputs if context is None else context
@@ -623,7 +623,7 @@ class Upsample(keras.layers.Layer):
         self.ups = keras.layers.UpSampling2D(2)
         self.conv = PaddedConv2D(channels, 3, padding = 1, name = "Upsample")
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         return self.conv(self.ups(inputs))
     
@@ -640,7 +640,7 @@ class GEGLU(keras.layers.Layer):
         self.output_dim = output_dim
         self.dense = keras.layers.Dense(output_dim * 2)
 
-    @tf.function
+    ## @tf.function
     def call(self, inputs):
         x = self.dense(inputs)
         x, gate = x[..., : self.output_dim], x[..., self.output_dim :]
