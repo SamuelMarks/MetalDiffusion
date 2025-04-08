@@ -14,10 +14,13 @@ import datetime
 ### Memmory Management
 import gc #Garbage Collector
 
+from jax import Array
 ### Console GUI
 from rich import print, box
 from rich.panel import Panel
 from rich.text import Text
+
+from .utils import keras_print
 
 ### Import TensorFlow module
 ### but with supressed warnings to clear up the terminal outputs
@@ -32,16 +35,13 @@ warnings.simplefilter(action = 'ignore', category = Warning)
 
 
 # More suppressed warnings from TensorFlow
-tf.get_logger().setLevel('INFO')
-tf.autograph.set_verbosity(0)
-tf.get_logger().setLevel(logging.ERROR)
+#tf.get_logger().setLevel('INFO')
+#tf.autograph.set_verbosity(0)
+#tf.get_logger().setLevel(logging.ERROR)
 
 ### Keras module
 import keras
-try:
-   from keras import backend as K
-except Exception as e:
-   print(e)
+from keras import backend as K
 
 ### Models from Modules
 ## VAE, encode and decode
@@ -115,11 +115,11 @@ class StableDiffusion:
             ### Step 2: Load Text Embeddings ###
             textEmbeddingTokens = []
             if textEmbeddings == None:
-                tf.print("\nIgnoring Text Embeddings")
+                keras_print("\nIgnoring Text Embeddings")
                 self.textEmbeddings = None
                 self.textEmbeddingsTokens = None
             else:
-                tf.print("\nUsing Text Embeddings")
+                keras_print("\nUsing Text Embeddings")
                 self.textEmbeddings, self.textEmbeddingsTokens = textEmbeddingTools.loadTextEmbedding(textEmbeddings)
 
             ### Step 3: Which version of Stable Diffusion ###
@@ -149,7 +149,7 @@ class StableDiffusion:
             
             ## Step 5.1: Create weightless models ##
             if controlNet[0] == True:
-                tf.print("\nUsing ControlNet",controlNet[1])
+                keras_print("\nUsing ControlNet",controlNet[1])
             
             text_encoder, diffusion_model, decoder, encoder, control_net = CreateModels(
                 self.imageHeight,
@@ -225,9 +225,9 @@ class StableDiffusion:
         modules = ['text_encoder', 'diffusion_model', 'decoder', 'encoder' ]
 
         if jitCompile is True:
-            tf.print("\nCompiling models with XLA (Accelerated Linear Algebra):")
+            keras_print("\nCompiling models with XLA (Accelerated Linear Algebra):")
         else:
-            tf.print("\nCompiling models")
+            keras_print("\nCompiling models")
 
         with tf.device(self.device):
             for module in modules:
@@ -261,11 +261,11 @@ class StableDiffusion:
         with tf.device(self.device):
             ## Memory Efficiency
             # Clear up tensorflow memory
-            tf.print("\n...cleaning memory...")
+            keras_print("\n...cleaning memory...")
             keras.backend.clear_session()
             gc.collect()
 
-            tf.print("...getting to work...")
+            keras_print("...getting to work...")
 
             ### Step 1: Cache Prompts
             if self.prompt != prompt: # New prompt?
@@ -290,10 +290,10 @@ class StableDiffusion:
 
             if self.encodedPrompt is None:
                 # No cached encoded prompt exists
-                tf.print("\n...tokenizing prompt...")
+                keras_print("\n...tokenizing prompt...")
                 
                 if self.textEmbeddings is not None:
-                    tf.print("...checking for text embeddings...")
+                    keras_print("...checking for text embeddings...")
                     prompt = textEmbeddingTools.injectTokens(
                         prompt = prompt,
                         embeddings = self.textEmbeddings
@@ -301,7 +301,7 @@ class StableDiffusion:
 
                 phrase, pos_ids = self.encodeText(prompt, batch_size, self.legacy)
 
-                tf.print("...encoding the tokenized prompt...")
+                keras_print("...encoding the tokenized prompt...")
                 context = self.text_encoder(
                     [phrase, pos_ids],
                     training = False
@@ -311,17 +311,17 @@ class StableDiffusion:
                 self.encodedPrompt = context
             else:
                 # Load cached encoded prompt
-                tf.print("...using cached encoded prompt...")
+                keras_print("...using cached encoded prompt...")
                 context = self.encodedPrompt
             
             if self.encodedNegativePrompt is None:
-                tf.print("...tokenizing negative prompt...")
+                keras_print("...tokenizing negative prompt...")
                 if negativePrompt is None:
                     # Encoding text requires a string variable
                     negativePrompt = ""
                 
                 if self.textEmbeddings is not None:
-                    tf.print("...checking for text embeddings...")
+                    keras_print("...checking for text embeddings...")
                     negativePrompt = textEmbeddingTools.injectTokens(
                         prompt = negativePrompt,
                         embeddings = self.textEmbeddings
@@ -329,7 +329,7 @@ class StableDiffusion:
                 
                 unconditional_tokens, pos_ids = self.encodeText(negativePrompt, batch_size, self.legacy)
                 
-                tf.print("...encoding the tokenized negative prompt...")
+                keras_print("...encoding the tokenized negative prompt...")
                 unconditionalContext = self.text_encoder(
                     [unconditional_tokens, pos_ids],
                     training = False
@@ -338,7 +338,7 @@ class StableDiffusion:
                 # Cache encoded negative prompt
                 self.encodedNegativePrompt = unconditionalContext
             else:
-                tf.print("...using cached encoded negative prompt...")
+                keras_print("...using cached encoded negative prompt...")
                 unconditionalContext = self.encodedNegativePrompt
 
             ### Step 3: Prepare the input image, if it was given
@@ -361,8 +361,8 @@ class StableDiffusion:
 
                     print(input_image_tensor.shape)
                     #displayImage(input_image_tensor, name = "1preppedImage")
-                elif isinstance(input_image, tf.Tensor):
-                    print("...received tf.Tensor (TensorFlow Tensor)...")
+                elif isinstance(input_image, Array):
+                    print("...received jax.Array (JAX Array)...")
                     input_image_tensor = input_image
                     #displayImage(input_image_tensor, name = "1preppedImage")
             
@@ -383,20 +383,20 @@ class StableDiffusion:
 
             ### Step 5: Create a random seed if one is not provided
             if seed is None:
-                tf.print("...generating random seed...")
+                keras_print("...generating random seed...")
                 seed = random.randint(1000, sys.maxsize)
                 seed = int(seed)
             else:
                 seed = int(seed)
 
             ### Step 6: Create time steps
-            tf.print("...creating time steps...")
+            keras_print("...creating time steps...")
             timesteps = keras.ops.arange(1, 1000, 1000 // num_steps)
 
             ### Step 7: Load Sampler and:
             ### Step 8: Start Diffusion
             if sampler == "DPMSolver":
-                tf.print("...using DPM Solver...\n...starting sampler...")
+                keras_print("...using DPM Solver...\n...starting sampler...")
 
                 alphasCumprod = keras.initializers.Constant(_ALPHAS_CUMPROD)
 
@@ -408,7 +408,7 @@ class StableDiffusion:
 
                 x = 5 / 0
             else:
-                if sampler is None: tf.print("...no sampler given...")
+                if sampler is None: keras_print("...no sampler given...")
 
                 # ControlNet
                 # Parameters: [0]Use ControlNet, [1] Input Image, [2]Strength, [3] Cache Input
@@ -418,7 +418,7 @@ class StableDiffusion:
                         self.controlNetCache = None
                     if type(self.controlNetCache) is dict:
                         if len(self.controlNetCache["unconditional"]) != timesteps:
-                            tf.print("Incompatible cache!")
+                            keras_print("Incompatible cache!")
                             self.controlNetCache = None
                     controlNetParamters = [True, controlNetImage, controlNetStrength, self.controlNetCache]
                 else:
@@ -439,7 +439,7 @@ class StableDiffusion:
                 )
 
                 if vPrediction is True:
-                    tf.print("...using v-prediction...")
+                    keras_print("...using v-prediction...")
 
                 # Sample, create image essentially
                 latentImage, self.controlNetCache = sampler.sample(
@@ -452,7 +452,7 @@ class StableDiffusion:
                 )
 
             ### Step 9: Decoding stage
-            tf.print("\n...decoding latent image...")
+            keras_print("\n...decoding latent image...")
             decoded = self.decoder(
                 latentImage,
                 training = False
@@ -498,7 +498,7 @@ class StableDiffusion:
                 inputs = self.tokenizer.encode(prompt)
                 # Then check the inputs length and truncate if too long
                 if len(inputs) > TextLimit:
-                    tf.print("Prompt is too long (should be less than 77 words). Truncating down to 77 words...")
+                    keras_print("Prompt is too long (should be less than 77 words). Truncating down to 77 words...")
                     inputs = inputs[:TextLimit]
                 
                 """## Create numpy array with the inputs
@@ -631,14 +631,14 @@ def CreateModels(
         if legacy is True:
             # Are we using Pre-Stable Diffusion 2.0?
 
-            tf.print("\nCreating models in legacy mode...")
+            keras_print("\nCreating models in legacy mode...")
 
             # Create Text Encoder model
             input_word_ids = keras.layers.Input(shape = (MAX_TEXT_LEN,), dtype = "int32")
             input_pos_ids = keras.layers.Input(shape = (MAX_TEXT_LEN,), dtype = "int32")
             embeds = CLIPTextTransformer()([input_word_ids, input_pos_ids])
             text_encoder = keras.models.Model([input_word_ids, input_pos_ids], embeds)
-            tf.print("Created text encoder model")
+            keras_print("Created text encoder model")
 
             if useControlNet[0] is False:
                 # Create Diffusion model
@@ -647,7 +647,7 @@ def CreateModels(
                     imageWidth,
                     MAX_TEXT_LEN
                 )
-                tf.print("Created diffusion model")
+                keras_print("Created diffusion model")
             else:
                 # Create seperate control net model
                 controlNet = ControlNetModel(
@@ -656,7 +656,7 @@ def CreateModels(
                     MAX_TEXT_LEN
                 )
 
-                tf.print("Created ControlNet Model")
+                keras_print("Created ControlNet Model")
 
                 # Create Diffusion model
                 diffusion_model = ControlDiffusionModel(
@@ -664,21 +664,21 @@ def CreateModels(
                     imageWidth,
                     MAX_TEXT_LEN
                 )
-                tf.print("Created diffusion model")
+                keras_print("Created diffusion model")
 
             # Create Decoder model
             decoder = Decoder(
                 img_height = imageHeight,
                 img_width = imageWidth,                
             )
-            tf.print("Created decoder model")
+            keras_print("Created decoder model")
 
             # Create Image Encoder model
             encoder = ImageEncoder(
                 img_height = imageHeight,
                 img_width = imageWidth
             )
-            tf.print("Created encoder model")
+            keras_print("Created encoder model")
 
         else:
             # We're using SD 2.0 and newer
@@ -722,7 +722,7 @@ def loadWeightsFromKeras(
         weightsPath,
         VAEOnly = False
 ):
-    tf.print("\nLoading Keras weights for:", weightsPath)
+    keras_print("\nLoading Keras weights for:", weightsPath)
     textEncoderWeights = weightsPath + "/text_encoder.h5"
     diffusionModelWeights = weightsPath + "/diffusion_model.h5"
     imageEncoderWeights = weightsPath + "/encoder.h5"
@@ -730,14 +730,14 @@ def loadWeightsFromKeras(
 
     if VAEOnly is False:
         models.text_encoder.load_weights(textEncoderWeights)
-        tf.print("...Text Encoder weights loaded!")
+        keras_print("...Text Encoder weights loaded!")
         models.diffusion_model.load_weights(diffusionModelWeights)
-        tf.print("...diffusion model weights loaded")
+        keras_print("...diffusion model weights loaded")
     models.encoder.load_weights(imageEncoderWeights)
-    tf.print("...Image Encoder weights loaded!")
+    keras_print("...Image Encoder weights loaded!")
     models.decoder.load_weights(decoderWeights)
-    tf.print("...Decoder weights loaded!")
-    tf.print("All weights loaded!")
+    keras_print("...Decoder weights loaded!")
+    keras_print("All weights loaded!")
 
 def loadWeightsFromPytorchCKPT(
         model,

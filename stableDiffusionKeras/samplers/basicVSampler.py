@@ -2,6 +2,9 @@
 
 import keras
 
+from stableDiffusionKeras.utils import keras_print
+
+
 class BasicSampler():
     def __init__(
         self,
@@ -114,7 +117,7 @@ class BasicSampler():
             unconditionalContext,
             unconditionalGuidanceScale
     ):
-        tf.print("...sampling:")
+        keras_print("...sampling:")
 
         # Progress Bar set-up
         progbar = keras.utils.Progbar(len(self.timesteps))
@@ -166,7 +169,7 @@ class BasicSampler():
             iteration += 1
             progbar.update(iteration)
 
-        tf.print("...finished! Returning latent image...")
+        keras_print("...finished! Returning latent image...")
 
         return self.latent
     

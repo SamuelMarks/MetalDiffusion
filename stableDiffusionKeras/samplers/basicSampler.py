@@ -10,6 +10,9 @@ import keras
 from PIL import Image
 import cv2 #OpenCV
 
+from stableDiffusionKeras.utils import keras_print
+
+
 class BasicSampler():
     def __init__(
         self,
@@ -157,19 +160,19 @@ class BasicSampler():
 
             # ControlNet Cache
             if controlNet[2] is not None:
-                tf.print("...using controlNet cache...")
+                keras_print("...using controlNet cache...")
                 controlNetCache = controlNet[2]
             else:
                 if controlNet[0] is True:
-                    tf.print("...creating controlNet cache...")
+                    keras_print("...creating controlNet cache...")
                 controlNetCache = []
             
             if controlNet[2] is not None and len(controlNet[2]) != len(list(enumerate(self.timesteps))[::-1]):
-                tf.print("...updating controlNet cache...")
+                keras_print("...updating controlNet cache...")
                 controlNetCache = []
                 controlNet[2] = None
 
-            tf.print("...sampling:")
+            keras_print("...sampling:")
 
             # Iteration loop
             for index, timestep in list(enumerate(self.timesteps))[::-1]:
@@ -262,7 +265,7 @@ class BasicSampler():
                 iteration += 1
                 progbar.update(iteration)
 
-            tf.print("...finished! Returning latent image...")
+            keras_print("...finished! Returning latent image...")
 
             return self.latent, controlNetCache
     
@@ -273,15 +276,15 @@ class BasicSampler():
             velocity
     ):
 
-        #sqrt_alphas_cumprod = keras.ops.sqrt(tf.math.cumprod([1 - alpha for alpha in self.alphas], axis = 0, exclusive = True))
+        #sqrt_alphas_cumprod = keras.ops.sqrt(keras.ops.cumprod([1 - alpha for alpha in self.alphas], axis = 0, exclusive = True))
         sqrt_alphas_cumprod = keras.ops.sqrt(self.alphas)
-        #tf.print("\nSquare Root Alphas Cumprod:\n",len(sqrt_alphas_cumprod))
+        #keras_print("\nSquare Root Alphas Cumprod:\n",len(sqrt_alphas_cumprod))
         tensorShape = sqrt_alphas_cumprod.shape[0]
         # sqrt_alphas_cumprod = sqrt_alphas_cumprod[timestep]
         #sqrt_alphas_cumprod = keras.ops.reshape(sqrt_alphas_cumprod, (tensorShape,) + (1,) * (len(latent.shape) - 1))
 
         sqrt_one_minus_alphas_cumprod = keras.ops.sqrt([1 - alpha for alpha in self.alphas])
-        #tf.print("\nSquare Root Alphas Cumprod Minus One:\n",len(sqrt_one_minus_alphas_cumprod))
+        #keras_print("\nSquare Root Alphas Cumprod Minus One:\n",len(sqrt_one_minus_alphas_cumprod))
         tensorShape = sqrt_one_minus_alphas_cumprod.shape[0]
         # sqrt_one_minus_alphas_cumprod = sqrt_one_minus_alphas_cumprod[timestep]
         #sqrt_one_minus_alphas_cumprod = keras.ops.reshape(sqrt_one_minus_alphas_cumprod, (tensorShape,) + (1,) * (len(latent.shape) - 1))
@@ -296,13 +299,13 @@ class BasicSampler():
             timestep,
             velocity
     ):
-        #sqrt_alphas_cumprod = keras.ops.sqrt(tf.math.cumprod([1 - alpha for alpha in self.alphas], axis = 0, exclusive = True))
+        #sqrt_alphas_cumprod = keras.ops.sqrt(keras.ops.cumprod([1 - alpha for alpha in self.alphas], axis = 0, exclusive = True))
         sqrt_alphas_cumprod = keras.ops.sqrt(self.alphas)
         tensorShape = sqrt_alphas_cumprod.shape[0]
         # sqrt_alphas_cumprod = sqrt_alphas_cumprod[timestep]
         #sqrt_alphas_cumprod = keras.ops.reshape(sqrt_alphas_cumprod, (tensorShape,) + (1,) * (len(latent.shape) - 1))
 
-        #sqrt_one_minus_alphas_cumprod = keras.ops.sqrt(1 - tf.math.cumprod(self.alphas, axis = 0, exclusive = True))
+        #sqrt_one_minus_alphas_cumprod = keras.ops.sqrt(1 - keras.ops.cumprod(self.alphas, axis = 0, exclusive = True))
         sqrt_one_minus_alphas_cumprod = keras.ops.sqrt([1 - alpha for alpha in self.alphas])
         tensorShape = sqrt_one_minus_alphas_cumprod.shape[0]
         # sqrt_one_minus_alphas_cumprod = sqrt_one_minus_alphas_cumprod[timestep]

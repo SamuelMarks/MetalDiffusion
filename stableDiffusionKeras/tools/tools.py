@@ -6,4 +6,4 @@ def getWeightsAndNames(model):
     weights = model.get_weights()
 
     for name, weight in zip(names, weights):
-        tf.print(name,"\n",weight.shape)
+        keras_print(name,"\n",weight.shape)

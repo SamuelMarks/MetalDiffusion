@@ -3,6 +3,9 @@ import numpy as np
 import keras
 import torch as torch
 
+from stableDiffusionKeras.utils import keras_print
+
+
 class Embedding:
     """
     This is an object class that stores the loaded Text Embedding
@@ -96,7 +99,7 @@ def injectTokens(
             foundTokens += 1
             prompt = prompt.replace(embedding.name, replacementToken)
 
-    tf.print("...found",foundTokens,"text embedding token(s)...")
+    keras_print("...found",foundTokens,"text embedding token(s)...")
 
     return prompt
 
@@ -194,7 +197,7 @@ def loadTextEmbeddingWeight(
     This code is where the magic happens with Text Embeddings.
     We're going to add our text embeddings to the Text Encoder Model
     """
-    tf.print("\nLoading Text Embedding weights...")
+    keras_print("\nLoading Text Embedding weights...")
 
     if legacy == True:
         columnLength = 768
@@ -224,20 +227,20 @@ def loadTextEmbeddingWeight(
         else:
             successfulTokenCount += 1
 
-    tf.print("...found all compatible embeddings, total:",successfulTokenCount,"...")
+    keras_print("...found all compatible embeddings, total:",successfulTokenCount,"...")
 
     # Create new Text Encoder model, increasing the size of tokens for the CLIP model
-    tf.print("...creating new text encoder model with embeddings")
+    keras_print("...creating new text encoder model with embeddings")
     input_word_ids = keras.layers.Input(shape = (maxTextLength,), dtype = "int32")
     input_pos_ids = keras.layers.Input(shape = (maxTextLength,), dtype = "int32")
     embeds = CLIP(vocabularySize = 49408 + successfulTokenCount)([input_word_ids, input_pos_ids])
     textEncoder = keras.models.Model([input_word_ids, input_pos_ids], embeds)
-    tf.print("...created text encoder model with", successfulTokenCount,"token(s) added")
+    keras_print("...created text encoder model with", successfulTokenCount,"token(s) added")
 
     # Update the weights for "token_embedding" and then set the weights of the model
-    tf.print("...setting updated weights for token_embedding...")
+    keras_print("...setting updated weights for token_embedding...")
     originalWeights[0] = updatedWeights
     textEncoder.set_weights(originalWeights)
-    tf.print("...weights loaded!")
+    keras_print("...weights loaded!")
 
     return textEncoder
